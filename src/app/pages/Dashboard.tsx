@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"calendar" | "table">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "table">("table");
   const [selectedEvent, setSelectedEvent] =
     useState<EventWithAssignments | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
