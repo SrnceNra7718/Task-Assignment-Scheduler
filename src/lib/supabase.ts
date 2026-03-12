@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { createClient } from "@supabase/supabase-js";
+import { projectId, publicAnonKey } from "../../utils/supabase/info";
 
 const supabaseUrl = `https://${projectId}.supabase.co`;
 
@@ -13,7 +13,7 @@ export type Database = {
     created_at: string;
   };
   tasks: {
-    id: string;
+    id: number;
     name: string;
     is_active: boolean;
     created_at: string;
@@ -33,14 +33,14 @@ export type Database = {
   assignments: {
     id: string;
     event_id: string;
-    task_id: string;
+    task_id: number;
     brother_id: number;
     created_at: string;
   };
   brother_task_eligibility: {
     id: string;
     brother_id: number;
-    task_id: string;
+    task_id: number;
     event_type_id: string;
   };
 };

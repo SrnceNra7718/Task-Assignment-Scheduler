@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Task } from '../../types/database';
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { Task } from "../../types/database";
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { toast } from "sonner";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskName, setNewTaskName] = useState("");
 
   useEffect(() => {
     fetchTasks();
@@ -18,15 +18,15 @@ export default function TasksPage() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('name');
+        .from("tasks")
+        .select("*")
+        .order("id");
 
       if (error) throw error;
       setTasks(data || []);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
-      toast.error('Failed to load tasks');
+      console.error("Error fetching tasks:", error);
+      toast.error("Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -35,65 +35,65 @@ export default function TasksPage() {
   async function toggleTaskStatus(task: Task) {
     try {
       const { error } = await supabase
-        .from('tasks')
+        .from("tasks")
         .update({ is_active: !task.is_active })
-        .eq('id', task.id);
+        .eq("id", task.id);
 
       if (error) throw error;
 
       toast.success(
-        `${task.name} is now ${!task.is_active ? 'active' : 'inactive'}`
+        `${task.name} is now ${!task.is_active ? "active" : "inactive"}`,
       );
       fetchTasks();
     } catch (error) {
-      console.error('Error toggling task status:', error);
-      toast.error('Failed to update status');
+      console.error("Error toggling task status:", error);
+      toast.error("Failed to update status");
     }
   }
 
   async function deleteTask(task: Task) {
     if (
       !confirm(
-        `Are you sure you want to delete ${task.name}? This will remove all related assignments and eligibility records.`
+        `Are you sure you want to delete ${task.name}? This will remove all related assignments and eligibility records.`,
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+      const { error } = await supabase.from("tasks").delete().eq("id", task.id);
 
       if (error) throw error;
 
       toast.success(`${task.name} has been deleted`);
       fetchTasks();
     } catch (error) {
-      console.error('Error deleting task:', error);
-      toast.error('Failed to delete task');
+      console.error("Error deleting task:", error);
+      toast.error("Failed to delete task");
     }
   }
 
   async function updateTask(task: Task) {
     if (!newTaskName.trim()) {
-      toast.error('Please enter a task name');
+      toast.error("Please enter a task name");
       return;
     }
 
     try {
       const { error } = await supabase
-        .from('tasks')
+        .from("tasks")
         .update({ name: newTaskName })
-        .eq('id', task.id);
+        .eq("id", task.id);
 
       if (error) throw error;
 
-      toast.success('Task updated successfully!');
+      toast.success("Task updated successfully!");
       setEditingTask(null);
-      setNewTaskName('');
+      setNewTaskName("");
       fetchTasks();
     } catch (error) {
-      console.error('Error updating task:', error);
-      toast.error('Failed to update task');
+      console.error("Error updating task:", error);
+      toast.error("Failed to update task");
     }
   }
 
@@ -141,7 +141,10 @@ export default function TasksPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={3}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     No tasks configured yet
                   </td>
                 </tr>
@@ -155,10 +158,10 @@ export default function TasksPage() {
                           value={newTaskName}
                           onChange={(e) => setNewTaskName(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') updateTask(task);
-                            if (e.key === 'Escape') {
+                            if (e.key === "Enter") updateTask(task);
+                            if (e.key === "Escape") {
                               setEditingTask(null);
-                              setNewTaskName('');
+                              setNewTaskName("");
                             }
                           }}
                           className="px-3 py-1.5 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
@@ -182,10 +185,12 @@ export default function TasksPage() {
                         )}
                         <span
                           className={`text-sm font-medium ${
-                            task.is_active ? 'text-emerald-600' : 'text-gray-500'
+                            task.is_active
+                              ? "text-emerald-600"
+                              : "text-gray-500"
                           }`}
                         >
-                          {task.is_active ? 'Active' : 'Inactive'}
+                          {task.is_active ? "Active" : "Inactive"}
                         </span>
                       </button>
                     </td>
@@ -202,7 +207,7 @@ export default function TasksPage() {
                             <button
                               onClick={() => {
                                 setEditingTask(null);
-                                setNewTaskName('');
+                                setNewTaskName("");
                               }}
                               className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 transition-colors"
                             >
@@ -246,9 +251,10 @@ export default function TasksPage() {
           About Task Management
         </h3>
         <p className="text-sm text-blue-700">
-          Tasks represent the different roles that brothers can be assigned to during
-          meetings. You can activate/deactivate tasks as needed. Inactive tasks won't
-          appear in the assignment system but their historical data is preserved.
+          Tasks represent the different roles that brothers can be assigned to
+          during meetings. You can activate/deactivate tasks as needed. Inactive
+          tasks won't appear in the assignment system but their historical data
+          is preserved.
         </p>
       </div>
     </div>

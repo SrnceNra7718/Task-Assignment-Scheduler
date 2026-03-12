@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { EventWithAssignments, Task, Brother } from '../../types/database';
-import { X, AlertTriangle } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { EventWithAssignments, Task, Brother } from "../../types/database";
+import { X, AlertTriangle } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
 
 interface AssignmentModalProps {
   event: EventWithAssignments;
@@ -18,13 +18,17 @@ export default function AssignmentModal({
   onClose,
   onSave,
 }: AssignmentModalProps) {
-  const [assignments, setAssignments] = useState<Record<string, number | null>>({});
-  const [eligibleBrothers, setEligibleBrothers] = useState<Record<string, Brother[]>>({});
+  const [assignments, setAssignments] = useState<Record<number, number | null>>(
+    {},
+  );
+  const [eligibleBrothers, setEligibleBrothers] = useState<
+    Record<number, Brother[]>
+  >({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Initialize assignments from event
-    const initialAssignments: Record<string, number | null> = {};
+    const initialAssignments: Record<number, number | null> = {};
     event.assignments.forEach((assignment: any) => {
       initialAssignments[assignment.tasks?.id] = assignment.brother_id;
     });
@@ -35,17 +39,19 @@ export default function AssignmentModal({
   }, [event]);
 
   async function fetchEligibleBrothers() {
-    const eligible: Record<string, Brother[]> = {};
+    const eligible: Record<number, Brother[]> = {};
 
     for (const task of tasks) {
       const { data } = await supabase
-        .from('brother_task_eligibility')
-        .select(`
+        .from("brother_task_eligibility")
+        .select(
+          `
           brother_id,
           brothers (*)
-        `)
-        .eq('task_id', task.id)
-        .eq('event_type_id', event.event_type_id);
+        `,
+        )
+        .eq("task_id", task.id)
+        .eq("event_type_id", event.event_type_id);
 
       if (data) {
         eligible[task.id] = data
@@ -57,7 +63,7 @@ export default function AssignmentModal({
     setEligibleBrothers(eligible);
   }
 
-  function handleAssignmentChange(taskId: string, brotherId: string) {
+  function handleAssignmentChange(taskId: number, brotherId: string) {
     setAssignments({
       ...assignments,
       [taskId]: brotherId ? parseInt(brotherId) : null,
@@ -67,7 +73,7 @@ export default function AssignmentModal({
   function getConflicts() {
     const brotherIds = Object.values(assignments).filter((id) => id !== null);
     const duplicates = brotherIds.filter(
-      (id, index) => brotherIds.indexOf(id) !== index
+      (id, index) => brotherIds.indexOf(id) !== index,
     );
     return [...new Set(duplicates)];
   }
@@ -75,7 +81,9 @@ export default function AssignmentModal({
   async function handleSave() {
     const conflicts = getConflicts();
     if (conflicts.length > 0) {
-      toast.error('Cannot assign the same brother to multiple tasks on the same day');
+      toast.error(
+        "Cannot assign the same brother to multiple tasks on the same day",
+      );
       return;
     }
 
@@ -83,10 +91,7 @@ export default function AssignmentModal({
       setLoading(true);
 
       // Delete existing assignments
-      await supabase
-        .from('assignments')
-        .delete()
-        .eq('event_id', event.id);
+      await supabase.from("assignments").delete().eq("event_id", event.id);
 
       // Insert new assignments
       const newAssignments = Object.entries(assignments)
@@ -99,17 +104,17 @@ export default function AssignmentModal({
 
       if (newAssignments.length > 0) {
         const { error } = await supabase
-          .from('assignments')
+          .from("assignments")
           .insert(newAssignments);
 
         if (error) throw error;
       }
 
-      toast.success('Assignments saved successfully!');
+      toast.success("Assignments saved successfully!");
       onSave();
     } catch (error) {
-      console.error('Error saving assignments:', error);
-      toast.error('Failed to save assignments');
+      console.error("Error saving assignments:", error);
+      toast.error("Failed to save assignments");
     } finally {
       setLoading(false);
     }
@@ -127,7 +132,7 @@ export default function AssignmentModal({
               Edit Assignments
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {format(parseISO(event.event_date), 'MMMM d, yyyy')} -{' '}
+              {format(parseISO(event.event_date), "MMMM d, yyyy")} -{" "}
               {event.event_type?.name}
             </p>
           </div>
@@ -169,14 +174,14 @@ export default function AssignmentModal({
                     {task.name}
                   </label>
                   <select
-                    value={selectedBrotherId || ''}
+                    value={selectedBrotherId || ""}
                     onChange={(e) =>
                       handleAssignmentChange(task.id, e.target.value)
                     }
                     className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                       hasConflict
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-gray-300'
+                        ? "border-red-300 bg-red-50"
+                        : "border-gray-300"
                     }`}
                   >
                     <option value="">-- Select Brother --</option>
@@ -210,7 +215,7 @@ export default function AssignmentModal({
             disabled={loading || conflicts.length > 0}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Saving...' : 'Save Assignments'}
+            {loading ? "Saving..." : "Save Assignments"}
           </button>
         </div>
       </div>

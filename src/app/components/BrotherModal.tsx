@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Brother, Task, EventType, BrotherTaskEligibility } from '../../types/database';
-import { X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import {
+  Brother,
+  Task,
+  EventType,
+  BrotherTaskEligibility,
+} from "../../types/database";
+import { X } from "lucide-react";
+import { toast } from "sonner";
 
 interface BrotherModalProps {
   brother: Brother | null;
@@ -20,9 +25,9 @@ export default function BrotherModal({
   onSave,
 }: BrotherModalProps) {
   const [brotherId, setBrotherId] = useState(brother?.id || 0);
-  const [fullName, setFullName] = useState(brother?.full_name || '');
+  const [fullName, setFullName] = useState(brother?.full_name || "");
   const [isActive, setIsActive] = useState(brother?.is_active ?? true);
-  const [eligibility, setEligibility] = useState<Record<string, string[]>>({});
+  const [eligibility, setEligibility] = useState<Record<number, string[]>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,7 +35,7 @@ export default function BrotherModal({
       fetchEligibility();
     } else {
       // Initialize with all tasks eligible for both event types
-      const initialEligibility: Record<string, string[]> = {};
+      const initialEligibility: Record<number, string[]> = {};
       tasks.forEach((task) => {
         initialEligibility[task.id] = eventTypes.map((et) => et.id);
       });
@@ -42,11 +47,11 @@ export default function BrotherModal({
     if (!brother) return;
 
     const { data } = await supabase
-      .from('brother_task_eligibility')
-      .select('*')
-      .eq('brother_id', brother.id);
+      .from("brother_task_eligibility")
+      .select("*")
+      .eq("brother_id", brother.id);
 
-    const eligibilityMap: Record<string, string[]> = {};
+    const eligibilityMap: Record<number, string[]> = {};
     tasks.forEach((task) => {
       eligibilityMap[task.id] = [];
     });
@@ -61,7 +66,7 @@ export default function BrotherModal({
     setEligibility(eligibilityMap);
   }
 
-  function toggleEligibility(taskId: string, eventTypeId: string) {
+  function toggleEligibility(taskId: number, eventTypeId: string) {
     setEligibility((prev) => {
       const current = prev[taskId] || [];
       const updated = current.includes(eventTypeId)
@@ -73,12 +78,12 @@ export default function BrotherModal({
 
   async function handleSave() {
     if (!fullName.trim()) {
-      toast.error('Please enter a name');
+      toast.error("Please enter a name");
       return;
     }
 
     if (!brotherId || brotherId <= 0) {
-      toast.error('Please enter a valid brother ID');
+      toast.error("Please enter a valid brother ID");
       return;
     }
 
@@ -88,21 +93,21 @@ export default function BrotherModal({
       if (brother) {
         // Update existing brother
         const { error: updateError } = await supabase
-          .from('brothers')
+          .from("brothers")
           .update({ full_name: fullName, is_active: isActive })
-          .eq('id', brother.id);
+          .eq("id", brother.id);
 
         if (updateError) throw updateError;
 
         // Delete existing eligibility
         await supabase
-          .from('brother_task_eligibility')
+          .from("brother_task_eligibility")
           .delete()
-          .eq('brother_id', brother.id);
+          .eq("brother_id", brother.id);
       } else {
         // Create new brother
         const { error: insertError } = await supabase
-          .from('brothers')
+          .from("brothers")
           .insert({ id: brotherId, full_name: fullName, is_active: isActive });
 
         if (insertError) throw insertError;
@@ -115,27 +120,29 @@ export default function BrotherModal({
             brother_id: brother?.id || brotherId,
             task_id: taskId,
             event_type_id: eventTypeId,
-          }))
+          })),
       );
 
       if (eligibilityRecords.length > 0) {
         const { error: eligibilityError } = await supabase
-          .from('brother_task_eligibility')
+          .from("brother_task_eligibility")
           .insert(eligibilityRecords);
 
         if (eligibilityError) throw eligibilityError;
       }
 
       toast.success(
-        brother ? 'Brother updated successfully!' : 'Brother added successfully!'
+        brother
+          ? "Brother updated successfully!"
+          : "Brother added successfully!",
       );
       onSave();
     } catch (error: any) {
-      console.error('Error saving brother:', error);
-      if (error.code === '23505') {
-        toast.error('A brother with this ID already exists');
+      console.error("Error saving brother:", error);
+      if (error.code === "23505") {
+        toast.error("A brother with this ID already exists");
       } else {
-        toast.error('Failed to save brother');
+        toast.error("Failed to save brother");
       }
     } finally {
       setLoading(false);
@@ -148,7 +155,7 @@ export default function BrotherModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {brother ? 'Edit Brother' : 'Add New Brother'}
+            {brother ? "Edit Brother" : "Add New Brother"}
           </h2>
           <button
             onClick={onClose}
@@ -228,9 +235,9 @@ export default function BrotherModal({
                     </h4>
                     <div className="flex flex-wrap gap-3">
                       {eventTypes.map((eventType) => {
-                        const isEligible = (eligibility[task.id] || []).includes(
-                          eventType.id
-                        );
+                        const isEligible = (
+                          eligibility[task.id] || []
+                        ).includes(eventType.id);
                         return (
                           <label
                             key={eventType.id}
@@ -271,7 +278,7 @@ export default function BrotherModal({
             disabled={loading}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Saving...' : brother ? 'Update Brother' : 'Add Brother'}
+            {loading ? "Saving..." : brother ? "Update Brother" : "Add Brother"}
           </button>
         </div>
       </div>

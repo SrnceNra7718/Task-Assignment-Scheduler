@@ -8,12 +8,12 @@ const app = new Hono();
 
 // Create Supabase client
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
 );
 
 // Enable logger
-app.use('*', logger(console.log));
+app.use("*", logger(console.log));
 
 // Enable CORS for all routes and methods
 app.use(
@@ -41,30 +41,31 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
 
     // Get all events for the month
     const { data: events, error: eventsError } = await supabase
-      .from('events')
-      .select('*, event_types(*)')
-      .eq('month', month)
-      .eq('year', year)
-      .order('event_date');
+      .from("events")
+      .select("*, event_types(*)")
+      .eq("month", month)
+      .eq("year", year)
+      .order("event_date");
 
     if (eventsError) {
-      console.error('Error fetching events:', eventsError);
-      return c.json({ error: 'Failed to fetch events' }, 500);
+      console.error("Error fetching events:", eventsError);
+      return c.json({ error: "Failed to fetch events" }, 500);
     }
 
     if (!events || events.length === 0) {
-      return c.json({ message: 'No events found for this month' }, 404);
+      return c.json({ message: "No events found for this month" }, 404);
     }
 
     // Get all active tasks
     const { data: tasks, error: tasksError } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('is_active', true);
+      .from("tasks")
+      .select("*")
+      .eq("is_active", true)
+      .order("id");
 
     if (tasksError) {
-      console.error('Error fetching tasks:', tasksError);
-      return c.json({ error: 'Failed to fetch tasks' }, 500);
+      console.error("Error fetching tasks:", tasksError);
+      return c.json({ error: "Failed to fetch tasks" }, 500);
     }
 
     // For each event, assign tasks
@@ -72,17 +73,14 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
       console.log(`Processing event: ${event.event_date}`);
 
       // Delete existing assignments for this event
-      await supabase
-        .from('assignments')
-        .delete()
-        .eq('event_id', event.id);
+      await supabase.from("assignments").delete().eq("event_id", event.id);
 
       // Get assignments already made this month (for balancing)
       const { data: monthlyStats } = await supabase
-        .from('monthly_assignment_count')
-        .select('*')
-        .eq('month', month)
-        .eq('year', year);
+        .from("monthly_assignment_count")
+        .select("*")
+        .eq("month", month)
+        .eq("year", year);
 
       const assignmentCounts: Record<number, number> = {};
       monthlyStats?.forEach((stat: any) => {
@@ -95,17 +93,20 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
       // Assign each task
       for (const task of tasks || []) {
         // Get eligible brothers for this task and event type
-        const { data: eligibleBrothers, error: eligibilityError } = await supabase
-          .from('brother_task_eligibility')
-          .select(`
+        const { data: eligibleBrothers, error: eligibilityError } =
+          await supabase
+            .from("brother_task_eligibility")
+            .select(
+              `
             brother_id,
             brothers (*)
-          `)
-          .eq('task_id', task.id)
-          .eq('event_type_id', event.event_type_id);
+          `,
+            )
+            .eq("task_id", task.id)
+            .eq("event_type_id", event.event_type_id);
 
         if (eligibilityError) {
-          console.error('Error fetching eligibility:', eligibilityError);
+          console.error("Error fetching eligibility:", eligibilityError);
           continue;
         }
 
@@ -115,11 +116,11 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
         }
 
         // Filter out inactive brothers and those already assigned this event
-        const availableBrothers = eligibleBrothers
-          .filter((item: any) => 
-            item.brothers?.is_active && 
-            !assignedBrothersThisEvent.has(item.brother_id)
-          );
+        const availableBrothers = eligibleBrothers.filter(
+          (item: any) =>
+            item.brothers?.is_active &&
+            !assignedBrothersThisEvent.has(item.brother_id),
+        );
 
         if (availableBrothers.length === 0) {
           console.log(`No available brothers for task ${task.name}`);
@@ -130,11 +131,11 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
         availableBrothers.sort((a: any, b: any) => {
           const aCount = assignmentCounts[a.brother_id] || 0;
           const bCount = assignmentCounts[b.brother_id] || 0;
-          
+
           if (aCount !== bCount) {
             return aCount - bCount;
           }
-          
+
           // Random tie-breaker
           return Math.random() - 0.5;
         });
@@ -144,7 +145,7 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
 
         // Create assignment
         const { error: assignmentError } = await supabase
-          .from('assignments')
+          .from("assignments")
           .insert({
             event_id: event.id,
             task_id: task.id,
@@ -152,28 +153,32 @@ app.post("/make-server-cf56d43f/generate-schedule", async (c) => {
           });
 
         if (assignmentError) {
-          console.error('Error creating assignment:', assignmentError);
+          console.error("Error creating assignment:", assignmentError);
           continue;
         }
 
         // Update tracking
         assignedBrothersThisEvent.add(selectedBrother.brother_id);
-        assignmentCounts[selectedBrother.brother_id] = 
+        assignmentCounts[selectedBrother.brother_id] =
           (assignmentCounts[selectedBrother.brother_id] || 0) + 1;
 
-        console.log(`Assigned ${task.name} to brother ${selectedBrother.brother_id}`);
+        console.log(
+          `Assigned ${task.name} to brother ${selectedBrother.brother_id}`,
+        );
       }
     }
 
-    return c.json({ 
-      success: true, 
+    return c.json({
+      success: true,
       message: `Successfully generated schedule for ${month}/${year}`,
-      eventsProcessed: events.length 
+      eventsProcessed: events.length,
     });
-
   } catch (error) {
-    console.error('Error generating schedule:', error);
-    return c.json({ error: 'Failed to generate schedule', details: error.message }, 500);
+    console.error("Error generating schedule:", error);
+    return c.json(
+      { error: "Failed to generate schedule", details: error.message },
+      500,
+    );
   }
 });
 

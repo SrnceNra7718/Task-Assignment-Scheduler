@@ -12,6 +12,7 @@ import {
   Download,
   Sparkles,
   Calendar as CalendarIcon,
+  Pencil,
 } from "lucide-react";
 import {
   format,
@@ -54,7 +55,7 @@ export default function Dashboard() {
         .from("tasks")
         .select("*")
         .eq("is_active", true)
-        .order("name");
+        .order("id");
 
       // Fetch event types
       const { data: eventTypesData } = await supabase
@@ -185,7 +186,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-8xl mx-auto space-y-4">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -338,23 +339,21 @@ export default function Dashboard() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Event Type
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
+                    Meeting
                   </th>
                   {tasks.map((task) => (
                     <th
                       key={task.id}
-                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
                     >
                       {task.name}
                     </th>
                   ))}
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-10"></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -362,7 +361,7 @@ export default function Dashboard() {
                   <tr>
                     <td
                       colSpan={tasks.length + 3}
-                      className="px-6 py-8 text-center text-gray-500"
+                      className="px-4 py-8 text-center text-gray-500"
                     >
                       No events scheduled for this month
                     </td>
@@ -370,10 +369,10 @@ export default function Dashboard() {
                 ) : (
                   events.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {format(parseISO(event.event_date), "MMM d, yyyy")}
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {format(parseISO(event.event_date), "MMM d")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${getEventTypeColor(
                             event.event_type?.name || "",
@@ -389,7 +388,7 @@ export default function Dashboard() {
                         return (
                           <td
                             key={task.id}
-                            className="px-6 py-4 whitespace-nowrap text-sm text-gray-600"
+                            className="px-4 py-4 text-sm text-gray-600"
                           >
                             {assignment ? (
                               <span className="font-medium">
@@ -401,15 +400,16 @@ export default function Dashboard() {
                           </td>
                         );
                       })}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className=" whitespace-nowrap text-sm">
                         <button
                           onClick={() => {
                             setSelectedEvent(event);
                             setModalOpen(true);
                           }}
-                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                          className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                          title="Edit assignments"
                         >
-                          Edit
+                          <Pencil className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>

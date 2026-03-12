@@ -6,7 +6,7 @@ export interface Brother {
 }
 
 export interface Task {
-  id: string;
+  id: number;
   name: string;
   is_active: boolean;
   created_at: string;
@@ -29,7 +29,7 @@ export interface Event {
 export interface Assignment {
   id: string;
   event_id: string;
-  task_id: string;
+  task_id: number;
   brother_id: number;
   created_at: string;
 }
@@ -37,7 +37,7 @@ export interface Assignment {
 export interface BrotherTaskEligibility {
   id: string;
   brother_id: number;
-  task_id: string;
+  task_id: number;
   event_type_id: string;
 }
 

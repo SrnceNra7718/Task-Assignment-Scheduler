@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Brother, Task, EventType } from '../../types/database';
-import { Plus, Pencil, Trash2, Search, Toggle } from 'lucide-react';
-import { toast } from 'sonner';
-import BrotherModal from '../components/BrotherModal';
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { Brother, Task, EventType } from "../../types/database";
+import { Plus, Pencil, Trash2, Search, Toggle } from "lucide-react";
+import { toast } from "sonner";
+import BrotherModal from "../components/BrotherModal";
 
 export default function BrothersPage() {
   const [brothers, setBrothers] = useState<Brother[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBrother, setSelectedBrother] = useState<Brother | null>(null);
   const [brotherStats, setBrotherStats] = useState<Record<number, number>>({});
@@ -24,9 +24,9 @@ export default function BrothersPage() {
       setLoading(true);
 
       const [brothersRes, tasksRes, eventTypesRes] = await Promise.all([
-        supabase.from('brothers').select('*').order('full_name'),
-        supabase.from('tasks').select('*').eq('is_active', true).order('name'),
-        supabase.from('event_types').select('*'),
+        supabase.from("brothers").select("*").order("id"),
+        supabase.from("tasks").select("*").eq("is_active", true).order("id"),
+        supabase.from("event_types").select("*"),
       ]);
 
       setBrothers(brothersRes.data || []);
@@ -36,10 +36,10 @@ export default function BrothersPage() {
       // Fetch current month stats
       const currentDate = new Date();
       const { data: statsData } = await supabase
-        .from('monthly_assignment_count')
-        .select('*')
-        .eq('month', currentDate.getMonth() + 1)
-        .eq('year', currentDate.getFullYear());
+        .from("monthly_assignment_count")
+        .select("*")
+        .eq("month", currentDate.getMonth() + 1)
+        .eq("year", currentDate.getFullYear());
 
       const stats: Record<number, number> = {};
       statsData?.forEach((stat: any) => {
@@ -47,8 +47,8 @@ export default function BrothersPage() {
       });
       setBrotherStats(stats);
     } catch (error) {
-      console.error('Error fetching brothers:', error);
-      toast.error('Failed to load brothers');
+      console.error("Error fetching brothers:", error);
+      toast.error("Failed to load brothers");
     } finally {
       setLoading(false);
     }
@@ -57,26 +57,26 @@ export default function BrothersPage() {
   async function toggleBrotherStatus(brother: Brother) {
     try {
       const { error } = await supabase
-        .from('brothers')
+        .from("brothers")
         .update({ is_active: !brother.is_active })
-        .eq('id', brother.id);
+        .eq("id", brother.id);
 
       if (error) throw error;
 
       toast.success(
-        `${brother.full_name} is now ${!brother.is_active ? 'active' : 'inactive'}`
+        `${brother.full_name} is now ${!brother.is_active ? "active" : "inactive"}`,
       );
       fetchData();
     } catch (error) {
-      console.error('Error toggling brother status:', error);
-      toast.error('Failed to update status');
+      console.error("Error toggling brother status:", error);
+      toast.error("Failed to update status");
     }
   }
 
   async function deleteBrother(brother: Brother) {
     if (
       !confirm(
-        `Are you sure you want to delete ${brother.full_name}? This will remove all their assignments and eligibility records.`
+        `Are you sure you want to delete ${brother.full_name}? This will remove all their assignments and eligibility records.`,
       )
     ) {
       return;
@@ -84,22 +84,22 @@ export default function BrothersPage() {
 
     try {
       const { error } = await supabase
-        .from('brothers')
+        .from("brothers")
         .delete()
-        .eq('id', brother.id);
+        .eq("id", brother.id);
 
       if (error) throw error;
 
       toast.success(`${brother.full_name} has been deleted`);
       fetchData();
     } catch (error) {
-      console.error('Error deleting brother:', error);
-      toast.error('Failed to delete brother');
+      console.error("Error deleting brother:", error);
+      toast.error("Failed to delete brother");
     }
   }
 
   const filteredBrothers = brothers.filter((brother) =>
-    brother.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+    brother.full_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   if (loading) {
@@ -174,10 +174,13 @@ export default function BrothersPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredBrothers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     {searchTerm
-                      ? 'No brothers found matching your search'
-                      : 'No brothers added yet'}
+                      ? "No brothers found matching your search"
+                      : "No brothers added yet"}
                   </td>
                 </tr>
               ) : (
@@ -204,11 +207,11 @@ export default function BrothersPage() {
                         <span
                           className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${
                             brother.is_active
-                              ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                              : 'bg-gray-100 text-gray-700 border-gray-200'
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                              : "bg-gray-100 text-gray-700 border-gray-200"
                           }`}
                         >
-                          {brother.is_active ? 'Active' : 'Inactive'}
+                          {brother.is_active ? "Active" : "Inactive"}
                         </span>
                       </button>
                     </td>
