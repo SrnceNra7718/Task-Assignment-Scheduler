@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
-import { EventWithAssignments, Task, Brother } from "../../types/database";
+import { supabase } from "../../../lib/supabase";
+import { EventWithAssignments, Task, Brother } from "../../../types/database";
 import { X, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";

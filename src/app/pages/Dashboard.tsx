@@ -1,18 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
-import {
-  EventWithAssignments,
-  Task,
-  EventType,
-  Brother,
-} from "../../types/database";
+import { EventWithAssignments, Task } from "../../types/database";
 import {
   ChevronLeft,
   ChevronRight,
   Download,
   Sparkles,
   Calendar as CalendarIcon,
-  Pencil,
+  Maximize2,
 } from "lucide-react";
 import {
   format,
@@ -24,96 +19,98 @@ import {
   parseISO,
 } from "date-fns";
 import { toast } from "sonner";
-import AssignmentModal from "../components/AssignmentModal";
+import AssignmentModal from "../components/modals/AssignmentModal";
+
 import { projectId, publicAnonKey } from "../../../utils/supabase/info";
+import { AssignmentsTable } from "../components/AssignmentsTable";
+import { FullScreenTableModal } from "../components/modals/FullScreenTableModal";
+import { getEventTypeColor, getTaskColor } from "../components/styleHelpers";
 
 export default function Dashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<EventWithAssignments[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"calendar" | "table">("table");
   const [selectedEvent, setSelectedEvent] =
     useState<EventWithAssignments | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [fullscreenModalOpen, setFullscreenModalOpen] = useState(false);
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  // Derived values
+  const monthStart = useMemo(() => startOfMonth(currentDate), [currentDate]);
+  const monthEnd = useMemo(() => endOfMonth(currentDate), [currentDate]);
+  const calendarDays = useMemo(
+    () => eachDayOfInterval({ start: monthStart, end: monthEnd }),
+    [monthStart, monthEnd],
+  );
 
-  useEffect(() => {
-    fetchData();
-  }, [currentDate]);
+  const eventByDateMap = useMemo(() => {
+    const map = new Map<string, EventWithAssignments>();
+    events.forEach((event) => {
+      const dateKey = format(parseISO(event.event_date), "yyyy-MM-dd");
+      map.set(dateKey, event);
+    });
+    return map;
+  }, [events]);
 
-  async function fetchData() {
+  const getEventForDay = useCallback(
+    (day: Date) => {
+      const dateKey = format(day, "yyyy-MM-dd");
+      return eventByDateMap.get(dateKey);
+    },
+    [eventByDateMap],
+  );
+
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Fetch tasks
       const { data: tasksData } = await supabase
         .from("tasks")
         .select("*")
         .eq("is_active", true)
         .order("id");
 
-      // Fetch event types
-      const { data: eventTypesData } = await supabase
-        .from("event_types")
-        .select("*");
-
-      // Fetch events for current month
       const { data: eventsData } = await supabase
         .from("events")
-        .select(
-          `
-          *,
-          event_types (*)
-        `,
-        )
+        .select(`*, event_types(*)`)
         .eq("month", currentDate.getMonth() + 1)
         .eq("year", currentDate.getFullYear())
         .order("event_date");
 
-      // Fetch assignments for these events
-      if (eventsData) {
-        const eventIds = eventsData.map((e: any) => e.id);
+      if (eventsData?.length) {
+        const eventIds = eventsData.map((e) => e.id);
         const { data: assignmentsData } = await supabase
           .from("assignments")
-          .select(
-            `
-            *,
-            brothers (*),
-            tasks (*)
-          `,
-          )
+          .select(`*, brothers(*), tasks(*)`)
           .in("event_id", eventIds);
 
-        const eventsWithAssignments = eventsData.map((event: any) => ({
+        const eventsWithAssignments = eventsData.map((event) => ({
           ...event,
           event_type: event.event_types,
           assignments:
-            assignmentsData?.filter((a: any) => a.event_id === event.id) || [],
+            assignmentsData?.filter((a) => a.event_id === event.id) || [],
         }));
-
         setEvents(eventsWithAssignments);
+      } else {
+        setEvents([]);
       }
-
       setTasks(tasksData || []);
-      setEventTypes(eventTypesData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
-  }
+  }, [currentDate]);
 
-  async function generateSchedule() {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const generateSchedule = useCallback(async () => {
     try {
       toast.loading("Generating monthly schedule...", { id: "generate" });
-
-      // Call auto-distribution algorithm
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-cf56d43f/generate-schedule`,
         {
@@ -128,54 +125,46 @@ export default function Dashboard() {
           }),
         },
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to generate schedule");
-      }
-
+      if (!response.ok) throw new Error("Failed to generate schedule");
       toast.success("Schedule generated successfully!", { id: "generate" });
       fetchData();
     } catch (error) {
       console.error("Error generating schedule:", error);
       toast.error("Failed to generate schedule", { id: "generate" });
     }
-  }
+  }, [currentDate, fetchData]);
 
-  function previousMonth() {
+  const previousMonth = useCallback(() => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1),
     );
-  }
+  }, [currentDate]);
 
-  function nextMonth() {
+  const nextMonth = useCallback(() => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1),
     );
-  }
+  }, [currentDate]);
 
-  function getEventForDay(day: Date) {
-    return events.find((event) => isSameDay(parseISO(event.event_date), day));
-  }
+  const handleEditEvent = useCallback((event: EventWithAssignments) => {
+    setSelectedEvent(event);
+    setModalOpen(true);
+  }, []);
 
-  function getTaskColor(taskName: string) {
-    const colors: Record<string, string> = {
-      "AV-1": "bg-blue-100 text-blue-700 border-blue-200",
-      "AV-2": "bg-purple-100 text-purple-700 border-purple-200",
-      CAMERA: "bg-pink-100 text-pink-700 border-pink-200",
-      "ATTENDANCE/AUDITORIUM":
-        "bg-indigo-100 text-indigo-700 border-indigo-200",
-      "ENTRANCE-1": "bg-emerald-100 text-emerald-700 border-emerald-200",
-      "ENTRANCE-2": "bg-teal-100 text-teal-700 border-teal-200",
-      "ENTRANCE-3": "bg-cyan-100 text-cyan-700 border-cyan-200",
-    };
-    return colors[taskName] || "bg-gray-100 text-gray-700 border-gray-200";
-  }
+  const handleModalClose = useCallback(() => {
+    setModalOpen(false);
+    setSelectedEvent(null);
+  }, []);
 
-  function getEventTypeColor(eventTypeName: string) {
-    return eventTypeName === "MIDWEEK"
-      ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-      : "bg-green-100 text-green-700 border-green-200";
-  }
+  const handleModalSave = useCallback(() => {
+    fetchData();
+    setModalOpen(false);
+    setSelectedEvent(null);
+  }, [fetchData]);
+
+  const handleFullScreenClose = useCallback(() => {
+    setFullscreenModalOpen(false);
+  }, []);
 
   if (loading) {
     return (
@@ -187,7 +176,6 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-8xl mx-auto space-y-4">
-      {/* Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -219,14 +207,23 @@ export default function Dashboard() {
               <Download className="w-4 h-4 inline-block mr-2" />
               Export
             </button>
+            {viewMode === "table" && (
+              <button
+                onClick={() => setFullscreenModalOpen(true)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium shadow-sm"
+              >
+                <Maximize2 className="w-4 h-4 inline-block mr-2" />
+                Full Screen
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Month Navigation */}
         <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
           <button
             onClick={previousMonth}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Previous month"
           >
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
@@ -236,17 +233,16 @@ export default function Dashboard() {
           <button
             onClick={nextMonth}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Next month"
           >
             <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
 
-      {/* Calendar View */}
       {viewMode === "calendar" && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="grid grid-cols-7 gap-2">
-            {/* Day headers */}
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div
                 key={day}
@@ -255,35 +251,26 @@ export default function Dashboard() {
                 {day}
               </div>
             ))}
-
-            {/* Calendar days */}
             {calendarDays.map((day) => {
               const event = getEventForDay(day);
               const isToday = isSameDay(day, new Date());
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const dayClasses = `min-h-32 border border-gray-200 rounded-lg p-2 ${
+                isCurrentMonth
+                  ? event
+                    ? "bg-white cursor-pointer hover:shadow-md transition-shadow"
+                    : "bg-gray-50/50"
+                  : "bg-gray-50"
+              } ${isToday ? "ring-2 ring-indigo-600" : ""}`;
 
-              return (
-                <div
-                  key={day.toString()}
-                  className={`min-h-32 border border-gray-200 rounded-lg p-2 ${
-                    !isSameMonth(day, currentDate)
-                      ? "bg-gray-50"
-                      : event
-                        ? "bg-white cursor-pointer hover:shadow-md transition-shadow"
-                        : "bg-gray-50/50"
-                  } ${isToday ? "ring-2 ring-indigo-600" : ""}`}
-                  onClick={() => {
-                    if (event) {
-                      setSelectedEvent(event);
-                      setModalOpen(true);
-                    }
-                  }}
-                >
+              const dayContent = (
+                <>
                   <div className="flex items-center justify-between mb-2">
                     <span
                       className={`text-sm font-medium ${
                         isToday
                           ? "text-indigo-600"
-                          : isSameMonth(day, currentDate)
+                          : isCurrentMonth
                             ? "text-gray-900"
                             : "text-gray-400"
                       }`}
@@ -300,7 +287,6 @@ export default function Dashboard() {
                       </span>
                     )}
                   </div>
-
                   {event && (
                     <div className="space-y-1">
                       {event.assignments.slice(0, 3).map((assignment: any) => (
@@ -325,6 +311,21 @@ export default function Dashboard() {
                       )}
                     </div>
                   )}
+                </>
+              );
+
+              return event ? (
+                <button
+                  key={day.toString()}
+                  type="button"
+                  onClick={() => handleEditEvent(event)}
+                  className={dayClasses}
+                >
+                  {dayContent}
+                </button>
+              ) : (
+                <div key={day.toString()} className={dayClasses}>
+                  {dayContent}
                 </div>
               );
             })}
@@ -332,111 +333,33 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Table View */}
       {viewMode === "table" && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
-                    Meeting
-                  </th>
-                  {tasks.map((task) => (
-                    <th
-                      key={task.id}
-                      className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
-                      {task.name}
-                    </th>
-                  ))}
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-10"></th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {events.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={tasks.length + 3}
-                      className="px-4 py-8 text-center text-gray-500"
-                    >
-                      No events scheduled for this month
-                    </td>
-                  </tr>
-                ) : (
-                  events.map((event) => (
-                    <tr key={event.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {format(parseISO(event.event_date), "MMM d")}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${getEventTypeColor(
-                            event.event_type?.name || "",
-                          )}`}
-                        >
-                          {event.event_type?.name}
-                        </span>
-                      </td>
-                      {tasks.map((task) => {
-                        const assignment = event.assignments.find(
-                          (a: any) => a.tasks?.id === task.id,
-                        );
-                        return (
-                          <td
-                            key={task.id}
-                            className="px-4 py-4 text-sm text-gray-600"
-                          >
-                            {assignment ? (
-                              <span className="font-medium">
-                                {(assignment as any).brothers?.full_name || "-"}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">Unassigned</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                      <td className=" whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => {
-                            setSelectedEvent(event);
-                            setModalOpen(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900 transition-colors"
-                          title="Edit assignments"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <AssignmentsTable
+            events={events}
+            tasks={tasks}
+            showEditColumn
+            onEditEvent={handleEditEvent}
+          />
         </div>
       )}
 
-      {/* Assignment Modal */}
       {modalOpen && selectedEvent && (
         <AssignmentModal
           event={selectedEvent}
           tasks={tasks}
-          onClose={() => {
-            setModalOpen(false);
-            setSelectedEvent(null);
-          }}
-          onSave={() => {
-            fetchData();
-            setModalOpen(false);
-            setSelectedEvent(null);
-          }}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
         />
       )}
+
+      <FullScreenTableModal
+        isOpen={fullscreenModalOpen}
+        onClose={handleFullScreenClose}
+        events={events}
+        tasks={tasks}
+        currentDate={currentDate}
+      />
     </div>
   );
 }

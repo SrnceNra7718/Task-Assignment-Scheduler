@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../../lib/supabase";
 import {
   Brother,
   Task,
   EventType,
   BrotherTaskEligibility,
-} from "../../types/database";
+} from "../../../types/database";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 

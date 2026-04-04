@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { Brother, Task, EventType } from "../../types/database";
-import { Plus, Pencil, Trash2, Search, Toggle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
-import BrotherModal from "../components/BrotherModal";
+import BrotherModal from "../components/modals/BrotherModal";
 
 export default function BrothersPage() {
   const [brothers, setBrothers] = useState<Brother[]>([]);
