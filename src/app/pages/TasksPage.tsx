@@ -42,7 +42,7 @@ export default function TasksPage() {
       if (error) throw error;
 
       toast.success(
-        `${task.name} is now ${!task.is_active ? "active" : "inactive"}`,
+        `${task.name} is now ${task.is_active ? "inactive" : "active"}`,
       );
       fetchTasks();
     } catch (error) {
