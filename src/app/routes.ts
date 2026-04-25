@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router";
+import HomePage from "./pages/HomePage";
 import Dashboard from "./pages/Dashboard";
 import BrothersPage from "./pages/BrothersPage";
 import TasksPage from "./pages/TasksPage";
@@ -11,7 +12,8 @@ export const router = createBrowserRouter([
     path: "/",
     Component: Layout,
     children: [
-      { index: true, Component: Dashboard },
+      { index: true, Component: HomePage },
+      { path: "dashboard", Component: Dashboard },
       { path: "brothers", Component: BrothersPage },
       { path: "tasks", Component: TasksPage },
       { path: "calendar", Component: CalendarPage },
