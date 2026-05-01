@@ -1,0 +1,4 @@
+# SPA Routing - Redirect all routes to index.html for client-side routing
+# This fixes 404 errors on hard refresh for sub-routes
+
+/*    /index.html   200
