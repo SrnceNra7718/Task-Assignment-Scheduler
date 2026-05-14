@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Download } from "lucide-react";
+import { X, FileImage } from "lucide-react";
 import { EventWithAssignments, Task } from "../../../types/database";
 import { format, parseISO } from "date-fns";
 import { toPng } from "html-to-image";
@@ -58,7 +58,7 @@ export default function EventDetailModal({
             "image/png": blob,
           }),
         ]);
-        alert("Modal image copied to clipboard!");
+        alert("Task image copied to clipboard!");
       }
     } catch (err) {
       console.error("Failed to capture modal:", err);
@@ -74,9 +74,9 @@ export default function EventDetailModal({
           onClick={captureAsImage}
           className="p-2 bg-white rounded-lg shadow-md hover:bg-gray-50 transition-colors"
           aria-label="Copy as image"
-          title="Copy modal as image"
+          title="Copy tasks as image"
         >
-          <Download className="w-5 h-5 text-gray-600" />
+          <FileImage className="w-5 h-5 text-gray-600" />
         </button>
         <button
           onClick={onClose}
