@@ -37,15 +37,15 @@ export default function EventDetailModal({
       : 0;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-gray-900/50">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header – centered */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-2 border-b border-gray-200 flex-shrink-0">
           <div className="flex-1 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900">
               {format(parseISO(event.event_date), "MMMM d, yyyy")}
             </h2>
-            <p className="text-base text-gray-500 mt-0.5">
+            <p className="text-sm text-gray-500 mt-0.5">
               <span className="font-bold">
                 {event.event_type?.name || "No Type"}
               </span>
@@ -53,36 +53,36 @@ export default function EventDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         {/* Body – non-scrollable, compact */}
-        <div className="flex-1 overflow-hidden p-3">
+        <div className="flex-1 overflow-hidden p-2">
           {event.assignments.length === 0 ? (
-            <p className="text-center text-gray-500 italic py-2 text-base">
+            <p className="text-center text-gray-500 italic py-1.5 text-sm">
               No brothers assigned
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {visibleTasks.map(({ task, assignment }) => {
                 const a = assignment as any;
                 return (
                   <div
                     key={task.id}
-                    className="flex flex-col items-center py-2 px-4  "
+                    className="flex flex-col items-center py-1.5 px-2"
                   >
                     <p
-                      className="text-base text-gray-700 text-center truncate w-full"
+                      className="text-sm text-gray-700 text-center truncate w-full"
                       title={task.name}
                     >
                       {task.name}
                     </p>
                     <p
-                      className="font-bold text-lg text-gray-900 text-center truncate w-full mt-0.5"
+                      className="font-bold text-base text-gray-900 text-center truncate w-full mt-0"
                       title={a?.brothers?.full_name || ""}
                     >
                       {a?.brothers?.full_name || "Unassigned"}
@@ -91,7 +91,7 @@ export default function EventDetailModal({
                 );
               })}
               {remaining > 0 && (
-                <p className="text-sm text-gray-500 italic text-center py-1">
+                <p className="text-xs text-gray-500 italic text-center py-0.5">
                   + {remaining} more
                 </p>
               )}
